@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CatalogView Hub - ระบบจัดการสมาชิก (Admin Console)</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Google Fonts: Prompt -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Supabase JS Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+        * { font-family: 'Prompt', sans-serif; }
+        .bg-catalog-gradient {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #020617 100%);
+        }
+        .shadow-catalog {
+            box-shadow: 0 10px 25px -5px rgba(30, 58, 138, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col justify-between">
+
+    <!-- TOP NAVIGATION BAR -->
+    <header class="sticky top-0 z-40 bg-slate-900 text-white shadow-md border-b border-slate-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-12 h-12 rounded-xl bg-amber-500/20 border border-amber-400/40 flex items-center justify-center text-amber-300 text-2xl shadow-inner">
+                    <i class="fa-solid fa-users-gear"></i>
+                </div>
+                <div>
+                    <div class="flex items-center space-x-2">
+                        <span class="text-2xl font-bold tracking-wide text-amber-200">CatalogView</span>
+                        <span class="text-xs px-2 py-0.5 rounded-full bg-rose-500/20 border border-rose-400/30 text-rose-300 font-semibold">Admin Console</span>
+                    </div>
+                    <p class="text-xs text-blue-200/80 tracking-wider">ระบบจัดการและตรวจสอบสิทธิ์สมาชิก</p>
+                </div>
+            </div>
+
+            <nav class="flex items-center space-x-3">
+                <a href="index.html" class="px-3.5 py-2 rounded-lg text-sm font-medium hover:bg-white/10 transition flex items-center space-x-2 text-slate-200 hover:text-white">
+                    <i class="fa-solid fa-house"></i>
+                    <span class="hidden sm:inline">ไปหน้าหลัก</span>
+                </a>
+                <button id="navLogoutBtn" onclick="handleLogout()" class="hidden px-3.5 py-1.5 rounded-full text-xs sm:text-sm border border-slate-700 hover:border-red-500 hover:bg-red-500/10 text-slate-300 hover:text-red-300 transition flex items-center space-x-1.5">
+                    <i class="fa-solid fa-power-off"></i>
+                    <span>ออกจากระบบ</span>
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <main class="flex-grow">
+        <!-- SCREEN 1: LOGIN & RESEND VERIFICATION GATE -->
+        <section id="loginGateSection" class="max-w-md mx-auto px-4 py-12">
+            <div class="bg-white rounded-2xl shadow-catalog border border-slate-200 overflow-hidden">
+                <div class="bg-catalog-gradient p-6 text-white text-center">
+                    <div class="w-14 h-14 bg-amber-500/20 border border-amber-400/30 rounded-full mx-auto flex items-center justify-center text-amber-300 text-2xl mb-3 shadow-inner">
+                        <i class="fa-solid fa-user-shield"></i>
+                    </div>
+                    <h2 class="text-xl font-bold">เข้าสู่ระบบ Admin</h2>
+                    <p class="text-xs text-blue-100/80 mt-1">กรอกอีเมลและรหัสผ่านบัญชีผู้ดูแลระบบ</p>
+                </div>
+
+                <form onsubmit="handleLoginSubmit(event)" class="p-6 space-y-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">อีเมลผู้ดูแลระบบ</label>
+                        <div class="relative">
+                            <i class="fa-solid fa-envelope absolute left-3 top-3 text-slate-400 text-sm"></i>
+                            <input type="email" id="adminEmail" required placeholder="edtech@kmitl.ac.th" class="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">รหัสผ่าน</label>
+                        <div class="relative">
+                            <i class="fa-solid fa-key absolute left-3 top-3 text-slate-400 text-sm"></i>
+                            <input type="password" id="adminPassword" required placeholder="••••••••" class="w-full pl-9 pr-10 py-2.5 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none">
+                        </div>
+                    </div>
+
+                    <button type="submit" class="w-full py-3 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-semibold text-sm shadow-md transition flex items-center justify-center space-x-2">
+                        <i class="fa-solid fa-right-to-bracket"></i>
+                        <span>ยืนยันเข้าสู่ระบบ Admin</span>
+                    </button>
+
+                    <!-- Resend Email Verification Option -->
+                    <div id="resendBlock" class="hidden pt-3 border-t border-slate-200 text-center">
+                        <p class="text-xs text-amber-700 font-medium mb-2">ยังไม่ได้รับอีเมลยืนยัน หรือติดสถานะรอการยืนยัน?</p>
+                        <button type="button" onclick="resendConfirmationEmail()" class="w-full py-2 px-3 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 text-xs font-semibold transition">
+                            <i class="fa-solid fa-paper-plane mr-1"></i> กดส่งอีเมลยืนยันอีกครั้ง
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </section>
+
+        <!-- SCREEN 2: USER MANAGEMENT DASHBOARD -->
+        <section id="adminDashboardSection" class="hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div class="bg-white rounded-2xl p-6 shadow-catalog border border-slate-100 mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div>
+                    <span class="px-2.5 py-0.5 rounded text-xs font-semibold bg-emerald-100 text-emerald-800">Verified Admin Portal</span>
+                    <h1 class="text-2xl font-bold text-slate-800 mt-1">รายชื่อและสิทธิ์สมาชิกทั้งหมด</h1>
+                    <p class="text-xs text-slate-500">จัดการบทบาทผู้ใช้งานในระบบ Supabase (`elearning_users`)</p>
+                </div>
+                <div class="flex items-center space-x-2 w-full sm:w-auto">
+                    <div class="relative flex-grow sm:w-64">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-slate-400 text-xs"></i>
+                        <input type="text" id="userSearchInput" oninput="filterUsers()" placeholder="ค้นหาชื่อ หรืออีเมล..." class="w-full pl-8 pr-3 py-2 rounded-xl border border-slate-300 text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none">
+                    </div>
+                    <button onclick="fetchUsersData()" class="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition flex items-center space-x-1">
+                        <i class="fa-solid fa-arrows-rotate"></i>
+                        <span class="hidden sm:inline">รีเฟรช</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Users Table -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-100/80 text-slate-700 text-xs uppercase tracking-wider border-b border-slate-200">
+                                <th class="py-3.5 px-4 font-semibold">ชื่อ-นามสกุล</th>
+                                <th class="py-3.5 px-4 font-semibold">อีเมลสถาบัน</th>
+                                <th class="py-3.5 px-4 font-semibold text-center">สิทธิ์ปัจจุบัน</th>
+                                <th class="py-3.5 px-4 font-semibold text-center">การจัดการสิทธิ์</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usersTableBody" class="divide-y divide-slate-100 text-sm"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="bg-slate-900 text-slate-400 py-6 border-t border-slate-800 text-center text-xs">
+        <p>© 2026 CatalogView Learning Hub - Admin Management Console</p>
+    </footer>
+
+    <!-- TOAST NOTIFICATION -->
+    <div id="toastContainer" class="fixed bottom-5 right-5 z-50 space-y-2 pointer-events-none"></div>
+
+    <script>
+        const SUPABASE_URL = "https://soveyqvggppjklddrwja.supabase.co";
+        const SUPABASE_KEY = "sb_publishable_OuBKjdxDFH7PiHpXMT2XkA_qh2pzRGq";
+        let supabaseClient = null;
+
+        try {
+            if (typeof supabase !== 'undefined' && supabase.createClient) {
+                supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+            }
+        } catch (e) {
+            console.error("Supabase Client Init Error:", e);
+        }
+
+        let currentAdminUser = null;
+        let allUsersList = [];
+
+        window.addEventListener('DOMContentLoaded', async () => {
+            await checkAdminSession();
+        });
+
+        async function checkIsUserAdmin(userId) {
+            if (!supabaseClient || !userId) return false;
+            try {
+                const { data, error } = await supabaseClient
+                    .from('elearning_users')
+                    .select('role, is_admin')
+                    .eq('id', userId)
+                    .maybeSingle();
+
+                if (!error && data) {
+                    return data.role === 'admin' || data.is_admin === true;
+                }
+            } catch (err) {
+                console.warn("User role check warning:", err);
+            }
+            return false;
+        }
+
+        async function checkAdminSession() {
+            if (!supabaseClient) return;
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            
+            if (session && session.user) {
+                const isAdmin = await checkIsUserAdmin(session.user.id);
+                if (isAdmin) {
+                    currentAdminUser = session.user;
+                    showDashboard();
+                    await fetchUsersData();
+                    return;
+                }
+            }
+            showLoginGate();
+        }
+
+        async function handleLoginSubmit(e) {
+            e.preventDefault();
+            const email = document.getElementById('adminEmail').value.trim();
+            const password = document.getElementById('adminPassword').value;
+
+            if (!supabaseClient) return;
+
+            try {
+                const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+                
+                if (error) {
+                    if (error.message.includes("Email not confirmed")) {
+                        document.getElementById('resendBlock').classList.remove('hidden');
+                        showToast("บัญชีนี้ยังไม่ได้ยืนยันอีเมล! กรุณากดปุ่มส่งอีเมลยืนยันด้านล่าง", "error");
+                        return;
+                    }
+                    throw error;
+                }
+
+                if (data.user) {
+                    const isAdmin = await checkIsUserAdmin(data.user.id);
+
+                    if (isAdmin) {
+                        currentAdminUser = data.user;
+                        showToast(`เข้าสู่ระบบสำเร็จ ยินดีต้อนรับ ${data.user.email}`, 'success');
+                        showDashboard();
+                        await fetchUsersData();
+                    } else {
+                        await supabaseClient.auth.signOut();
+                        showToast("สิทธิ์ไม่ถูกต้อง: บัญชีนี้ไม่มีสิทธิ์เป็น Admin ในระบบ", "error");
+                    }
+                }
+            } catch (err) {
+                showToast("เข้าสู่ระบบไม่สำเร็จ: " + (err.message || "ข้อมูลไม่ถูกต้อง"), "error");
+            }
+        }
+
+        async function resendConfirmationEmail() {
+            const email = document.getElementById('adminEmail').value.trim();
+            if (!email) {
+                showToast("กรุณากรอกอีเมลก่อนกดส่ง", "error");
+                return;
+            }
+
+            try {
+                const { error } = await supabaseClient.auth.resend({
+                    type: 'signup',
+                    email: email,
+                });
+                if (error) throw error;
+                showToast(`ระบบส่งลิงก์ยืนยันไปยัง ${email} เรียบร้อยแล้ว!`, "success");
+            } catch (err) {
+                showToast("ไม่สามารถส่งอีเมลได้: " + err.message, "error");
+            }
+        }
+
+        async function fetchUsersData() {
+            if (!supabaseClient) return;
+            try {
+                const { data, error } = await supabaseClient
+                    .from('elearning_users')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+
+                if (!error && data) {
+                    allUsersList = data;
+                    renderUsersTable(allUsersList);
+                } else if (error) {
+                    showToast("ไม่สามารถดึงข้อมูลสมาชิกได้: " + error.message, "error");
+                }
+            } catch (e) {
+                console.error("Fetch users error:", e);
+            }
+        }
+
+        function renderUsersTable(list) {
+            const tbody = document.getElementById('usersTableBody');
+            tbody.innerHTML = '';
+
+            if (list.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" class="py-8 text-center text-slate-400">ไม่พบรายชื่อสมาชิกในระบบ</td></tr>`;
+                return;
+            }
+
+            list.forEach(u => {
+                const isStaffOrAdmin = u.role === 'admin' || u.is_admin === true;
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50 transition border-b border-slate-100";
+
+                tr.innerHTML = `
+                    <td class="py-3.5 px-4 font-semibold text-slate-800">
+                        ${u.full_name || 'ไม่ระบุชื่อ'}
+                    </td>
+                    <td class="py-3.5 px-4 text-slate-600 font-mono text-xs">
+                        ${u.email}
+                    </td>
+                    <td class="py-3.5 px-4 text-center">
+                        ${isStaffOrAdmin ? 
+                            '<span class="px-2.5 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-700 border border-rose-200"><i class="fa-solid fa-user-gear mr-1"></i> เจ้าหน้าที่/Admin</span>' : 
+                            '<span class="px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200"><i class="fa-solid fa-users mr-1"></i> สมาชิก</span>'
+                        }
+                    </td>
+                    <td class="py-3.5 px-4 text-center">
+                        <button onclick="toggleUserRole('${u.id}', '${u.role}')" class="px-3 py-1.5 rounded-lg border text-xs font-semibold transition ${isStaffOrAdmin ? 'bg-slate-100 hover:bg-amber-50 text-slate-700 hover:text-amber-800 border-slate-300' : 'bg-rose-50 hover:bg-rose-100 text-rose-700 border-rose-200'}">
+                            ${isStaffOrAdmin ? 'เปลี่ยนเป็น สมาชิก' : 'ยกระดับเป็น เจ้าหน้าที่'}
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        async function toggleUserRole(userId, currentRole) {
+            if (!supabaseClient) return;
+            const newRole = (currentRole === 'admin') ? 'student' : 'admin';
+            const isAdmin = newRole === 'admin';
+
+            try {
+                const { error } = await supabaseClient
+                    .from('elearning_users')
+                    .update({ role: newRole, is_admin: isAdmin })
+                    .eq('id', userId);
+
+                if (error) throw error;
+                showToast("อัปเดตสิทธิ์สมาชิกเรียบร้อยแล้ว", "success");
+                await fetchUsersData();
+            } catch (err) {
+                showToast("เกิดข้อผิดพลาดในการเปลี่ยนสิทธิ์: " + err.message, "error");
+            }
+        }
+
+        function filterUsers() {
+            const query = document.getElementById('userSearchInput').value.trim().toLowerCase();
+            const filtered = allUsersList.filter(u => 
+                (u.full_name && u.full_name.toLowerCase().includes(query)) ||
+                (u.email && u.email.toLowerCase().includes(query))
+            );
+            renderUsersTable(filtered);
+        }
+
+        async function handleLogout() {
+            if (supabaseClient) await supabaseClient.auth.signOut();
+            currentAdminUser = null;
+            showLoginGate();
+            showToast("ออกจากระบบเรียบร้อยแล้ว", "info");
+        }
+
+        function showLoginGate() {
+            document.getElementById('loginGateSection').classList.remove('hidden');
+            document.getElementById('adminDashboardSection').classList.add('hidden');
+            document.getElementById('navLogoutBtn').classList.add('hidden');
+        }
+
+        function showDashboard() {
+            document.getElementById('loginGateSection').classList.add('hidden');
+            document.getElementById('adminDashboardSection').classList.remove('hidden');
+            document.getElementById('navLogoutBtn').classList.remove('hidden');
+        }
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            let bg = type === 'success' ? 'bg-emerald-700' : (type === 'error' ? 'bg-red-700' : 'bg-slate-800');
+            toast.className = `p-3.5 px-5 rounded-xl shadow-xl text-white text-xs sm:text-sm flex items-center space-x-2 transition-all duration-300 pointer-events-auto ${bg}`;
+            toast.innerHTML = `<span>${message}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => { toast.classList.add('opacity-0'); setTimeout(() => toast.remove(), 300); }, 3500);
+        }
+    </script>
+</body>
+</html>
