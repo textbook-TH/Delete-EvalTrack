@@ -48,10 +48,6 @@
             </div>
 
             <nav class="flex items-center space-x-3">
-                <a href="index.html" class="px-3.5 py-2 rounded-lg text-sm font-medium hover:bg-white/10 transition flex items-center space-x-2 text-slate-200 hover:text-white">
-                    <i class="fa-solid fa-house"></i>
-                    <span class="hidden sm:inline">ไปหน้าหลัก</span>
-                </a>
                 <button id="navLogoutBtn" onclick="handleLogout()" class="hidden px-3.5 py-1.5 rounded-full text-xs sm:text-sm border border-slate-700 hover:border-red-500 hover:bg-red-500/10 text-slate-300 hover:text-red-300 transition flex items-center space-x-1.5">
                     <i class="fa-solid fa-power-off"></i>
                     <span>ออกจากระบบ</span>
@@ -111,7 +107,7 @@
                 <div>
                     <span class="px-2.5 py-0.5 rounded text-xs font-semibold bg-emerald-100 text-emerald-800">Verified Admin Portal</span>
                     <h1 class="text-2xl font-bold text-slate-800 mt-1">รายชื่อและสิทธิ์สมาชิกทั้งหมด</h1>
-                    <p class="text-xs text-slate-500">จัดการบทบาทผู้ใช้งานในระบบ Supabase (`elearning_users`)</p>
+                    <p class="text-xs text-slate-500">จัดการบทบาทและลบผู้ใช้งานในระบบ Supabase (`elearning_users`)</p>
                 </div>
                 <div class="flex items-center space-x-2 w-full sm:w-auto">
                     <div class="relative flex-grow sm:w-64">
@@ -134,7 +130,7 @@
                                 <th class="py-3.5 px-4 font-semibold">ชื่อ-นามสกุล</th>
                                 <th class="py-3.5 px-4 font-semibold">อีเมลสถาบัน</th>
                                 <th class="py-3.5 px-4 font-semibold text-center">สิทธิ์ปัจจุบัน</th>
-                                <th class="py-3.5 px-4 font-semibold text-center">การจัดการสิทธิ์</th>
+                                <th class="py-3.5 px-4 font-semibold text-center">การจัดการ</th>
                             </tr>
                         </thead>
                         <tbody id="usersTableBody" class="divide-y divide-slate-100 text-sm"></tbody>
@@ -219,7 +215,7 @@
                 if (error) {
                     if (error.message.includes("Email not confirmed")) {
                         document.getElementById('resendBlock').classList.remove('hidden');
-                        showToast("บัญชีนี้ยังไม่ได้ยืนยันอีเมล! กรุณากดปุ่มส่งอีเมลยืนยันด้านล่าง", "error");
+                        showToast("บัญชีนี้ยังไม่ได้ยืนยันอีเมล! กรุณากดส่งอีเมลยืนยันด้านล่าง", "error");
                         return;
                     }
                     throw error;
@@ -309,8 +305,9 @@
                         }
                     </td>
                     <td class="py-3.5 px-4 text-center">
-                        <button onclick="toggleUserRole('${u.id}', '${u.role}')" class="px-3 py-1.5 rounded-lg border text-xs font-semibold transition ${isStaffOrAdmin ? 'bg-slate-100 hover:bg-amber-50 text-slate-700 hover:text-amber-800 border-slate-300' : 'bg-rose-50 hover:bg-rose-100 text-rose-700 border-rose-200'}">
-                            ${isStaffOrAdmin ? 'เปลี่ยนเป็น สมาชิก' : 'ยกระดับเป็น เจ้าหน้าที่'}
+                        <button onclick="deleteUser('${u.id}', '${u.full_name || u.email}')" class="px-3.5 py-1.5 rounded-lg border border-red-200 bg-red-50 hover:bg-red-100 text-red-600 hover:text-red-700 text-xs font-semibold transition inline-flex items-center space-x-1.5 shadow-sm" title="ลบสมาชิก">
+                            <i class="fa-solid fa-trash-can"></i>
+                            <span>ลบสมาชิก</span>
                         </button>
                     </td>
                 `;
@@ -318,22 +315,29 @@
             });
         }
 
-        async function toggleUserRole(userId, currentRole) {
+        async function deleteUser(userId, userName) {
             if (!supabaseClient) return;
-            const newRole = (currentRole === 'admin') ? 'student' : 'admin';
-            const isAdmin = newRole === 'admin';
+
+            if (currentAdminUser && currentAdminUser.id === userId) {
+                showToast("ไม่สามารถลบบัญชีผู้ดูแลระบบที่กำลังใช้งานอยู่ได้", "error");
+                return;
+            }
+
+            const confirmDelete = confirm(`คุณแน่ใจหรือไม่ว่าต้องการลบสมาชิก "${userName}" ออกจากระบบ?`);
+            if (!confirmDelete) return;
 
             try {
                 const { error } = await supabaseClient
                     .from('elearning_users')
-                    .update({ role: newRole, is_admin: isAdmin })
+                    .delete()
                     .eq('id', userId);
 
                 if (error) throw error;
-                showToast("อัปเดตสิทธิ์สมาชิกเรียบร้อยแล้ว", "success");
+
+                showToast(`ลบสมาชิก "${userName}" สำเร็จเรียบร้อยแล้ว`, "success");
                 await fetchUsersData();
             } catch (err) {
-                showToast("เกิดข้อผิดพลาดในการเปลี่ยนสิทธิ์: " + err.message, "error");
+                showToast("เกิดข้อผิดพลาดในการลบสมาชิก: " + err.message, "error");
             }
         }
 
