@@ -27,6 +27,13 @@
         .shadow-catalog {
             box-shadow: 0 10px 25px -5px rgba(30, 58, 138, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
         }
+        /* Popup Animation Styles */
+        .modal-backdrop {
+            transition: opacity 0.25s ease-in-out, visibility 0.25s ease-in-out;
+        }
+        .modal-card {
+            transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease-in-out;
+        }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col justify-between">
@@ -159,16 +166,22 @@
         </div>
     </footer>
 
-    <!-- ELEGANT POPUP MODAL -->
-    <div id="customModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md opacity-0 pointer-events-none transition-all duration-300">
-        <div id="modalContent" class="bg-white rounded-3xl shadow-2xl border border-slate-100 max-w-sm w-full p-6 text-center transform scale-90 transition-all duration-300">
+    <!-- ELEGANT POPUP MODAL (CENTERED & STYLED) -->
+    <div id="customModal" class="modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm opacity-0 pointer-events-none">
+        <div id="modalContent" class="modal-card bg-white rounded-3xl shadow-2xl border border-slate-100 max-w-sm w-full p-6 text-center transform scale-95 opacity-0">
+            
+            <!-- Icon Container with Glow Ring -->
             <div id="modalIconContainer" class="w-16 h-16 rounded-2xl mx-auto flex items-center justify-center mb-4 transition-all duration-300">
                 <i id="modalIcon" class="text-3xl"></i>
             </div>
-            <h3 id="modalTitle" class="text-lg font-bold text-slate-800 mb-2"></h3>
-            <p id="modalMessage" class="text-xs text-slate-600 mb-6 leading-relaxed"></p>
+
+            <!-- Title & Message -->
+            <h3 id="modalTitle" class="text-lg font-bold text-slate-800 mb-2 tracking-tight"></h3>
+            <p id="modalMessage" class="text-sm text-slate-600 mb-6 leading-relaxed font-normal"></p>
+
+            <!-- Modal Action Buttons -->
             <div id="modalActions" class="flex items-center justify-center space-x-3">
-                <button id="modalPrimaryBtn" class="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs shadow-md transition w-full sm:w-auto">
+                <button id="modalPrimaryBtn" class="w-full py-2.5 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 active:scale-95 text-white font-semibold text-xs shadow-md transition-all duration-150">
                     ตกลง
                 </button>
             </div>
@@ -362,7 +375,7 @@
                         </span>
                     </td>
                     <td class="py-3.5 px-4 text-center">
-                        <button onclick="confirmDeleteUser('${u.id}', '${u.full_name || u.email}')" class="px-2.5 py-1.5 sm:px-3.5 sm:py-1.5 rounded-lg border border-red-200 bg-red-50 hover:bg-red-100 text-red-600 hover:text-red-700 text-xs font-semibold transition inline-flex items-center space-x-1 shadow-sm" title="ลบสมาชิก">
+                        <button onclick="confirmDeleteUser('${u.id}', '${u.full_name || u.email}')" class="px-2.5 py-1.5 sm:px-3.5 sm:py-1.5 rounded-lg border border-red-200 bg-red-50 hover:bg-red-100 text-red-600 hover:text-red-700 text-xs font-semibold transition inline-flex items-center space-x-1 shadow-sm active:scale-95" title="ลบสมาชิก">
                             <i class="fa-solid fa-trash-can"></i>
                             <span class="hidden sm:inline">ลบสมาชิก</span>
                         </button>
@@ -414,7 +427,8 @@
                 return;
             }
 
-            showConfirmPopup("ยืนยันการลบสมาชิก", `คุณแน่ใจหรือไม่ว่าต้องการลบสมาชิก "<span class="font-bold text-slate-800">${userName}</span>" ออกจากระบบ?`, async () => {
+            // Updated confirm deletion message as explicitly requested
+            showConfirmPopup("ยืนยันการลบสมาชิก", "คุณแน่ใจหรือไม่ว่าต้องการลบสมาชิก", async () => {
                 try {
                     const { error } = await supabaseClient
                         .from('elearning_users')
@@ -423,7 +437,7 @@
 
                     if (error) throw error;
 
-                    showPopup("สำเร็จ", `ลบสมาชิก "${userName}" สำเร็จเรียบร้อยแล้ว`, "success");
+                    showPopup("สำเร็จ", `ลบสมาชิกเรียบร้อยแล้ว`, "success");
                     await fetchUsersData();
                 } catch (err) {
                     showPopup("เกิดข้อผิดพลาด", "เกิดข้อผิดพลาดในการลบสมาชิก: " + err.message, "error");
@@ -445,7 +459,6 @@
             if (supabaseClient) await supabaseClient.auth.signOut();
             currentAdminUser = null;
             showLoginGate();
-            // ออกจากระบบทันทีโดยไม่มีแจ้งเตือนหรือป๊อปอับใดๆ
         }
 
         function showLoginGate() {
@@ -460,7 +473,7 @@
             document.getElementById('navLogoutBtn').classList.remove('hidden');
         }
 
-        /* POPUP MODAL SYSTEM */
+        /* POPUP MODAL SYSTEM - ENHANCED & CENTERED */
         function showPopup(title, message, type = 'info') {
             const modal = document.getElementById('customModal');
             const content = document.getElementById('modalContent');
@@ -474,28 +487,28 @@
             messageEl.innerHTML = message;
 
             if (type === 'success') {
-                iconBg.className = 'w-16 h-16 rounded-2xl mx-auto flex items-center justify-center mb-4 bg-emerald-50 text-emerald-600 ring-8 ring-emerald-50/50';
+                iconBg.className = 'w-16 h-16 rounded-2xl mx-auto flex items-center justify-center mb-4 bg-emerald-50 text-emerald-500 ring-8 ring-emerald-500/10 shadow-sm';
                 icon.className = 'fa-solid fa-circle-check text-3xl';
             } else if (type === 'error') {
-                iconBg.className = 'w-16 h-16 rounded-2xl mx-auto flex items-center justify-center mb-4 bg-rose-50 text-rose-600 ring-8 ring-rose-50/50';
+                iconBg.className = 'w-16 h-16 rounded-2xl mx-auto flex items-center justify-center mb-4 bg-rose-50 text-rose-500 ring-8 ring-rose-500/10 shadow-sm';
                 icon.className = 'fa-solid fa-circle-xmark text-3xl';
             } else if (type === 'warning') {
-                iconBg.className = 'w-16 h-16 rounded-2xl mx-auto flex items-center justify-center mb-4 bg-amber-50 text-amber-600 ring-8 ring-amber-50/50';
+                iconBg.className = 'w-16 h-16 rounded-2xl mx-auto flex items-center justify-center mb-4 bg-amber-50 text-amber-500 ring-8 ring-amber-500/10 shadow-sm';
                 icon.className = 'fa-solid fa-triangle-exclamation text-3xl';
             } else {
-                iconBg.className = 'w-16 h-16 rounded-2xl mx-auto flex items-center justify-center mb-4 bg-slate-100 text-slate-700 ring-8 ring-slate-100/50';
+                iconBg.className = 'w-16 h-16 rounded-2xl mx-auto flex items-center justify-center mb-4 bg-slate-100 text-slate-600 ring-8 ring-slate-400/10 shadow-sm';
                 icon.className = 'fa-solid fa-circle-info text-3xl';
             }
 
             actionsEl.innerHTML = `
-                <button onclick="closePopup()" class="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs shadow-md transition">
+                <button onclick="closePopup()" class="w-full py-2.5 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 active:scale-95 text-white font-semibold text-xs shadow-md transition-all duration-150">
                     ตกลง
                 </button>
             `;
 
             modal.classList.remove('opacity-0', 'pointer-events-none');
-            content.classList.remove('scale-90');
-            content.classList.add('scale-100');
+            content.classList.remove('scale-95', 'opacity-0');
+            content.classList.add('scale-100', 'opacity-100');
         }
 
         function showConfirmPopup(title, message, onConfirm) {
@@ -510,14 +523,14 @@
             titleEl.textContent = title;
             messageEl.innerHTML = message;
 
-            iconBg.className = 'w-16 h-16 rounded-2xl mx-auto flex items-center justify-center mb-4 bg-red-50 text-red-600 ring-8 ring-red-50/50';
+            iconBg.className = 'w-16 h-16 rounded-2xl mx-auto flex items-center justify-center mb-4 bg-red-50 text-red-500 ring-8 ring-red-500/10 shadow-sm';
             icon.className = 'fa-solid fa-trash-can text-3xl';
 
             actionsEl.innerHTML = `
-                <button id="cancelModalBtn" onclick="closePopup()" class="w-full py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs transition">
+                <button id="cancelModalBtn" onclick="closePopup()" class="w-full py-2.5 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 font-semibold text-xs transition-all duration-150">
                     ยกเลิก
                 </button>
-                <button id="confirmModalBtn" class="w-full py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-semibold text-xs shadow-md transition">
+                <button id="confirmModalBtn" class="w-full py-2.5 px-4 rounded-xl bg-red-600 hover:bg-red-700 active:scale-95 text-white font-semibold text-xs shadow-md shadow-red-500/20 transition-all duration-150">
                     ยืนยันการลบ
                 </button>
             `;
@@ -528,17 +541,20 @@
             };
 
             modal.classList.remove('opacity-0', 'pointer-events-none');
-            content.classList.remove('scale-90');
-            content.classList.add('scale-100');
+            content.classList.remove('scale-95', 'opacity-0');
+            content.classList.add('scale-100', 'opacity-100');
         }
 
         function closePopup() {
             const modal = document.getElementById('customModal');
             const content = document.getElementById('modalContent');
 
-            modal.classList.add('opacity-0', 'pointer-events-none');
-            content.classList.remove('scale-100');
-            content.classList.add('scale-90');
+            content.classList.remove('scale-100', 'opacity-100');
+            content.classList.add('scale-95', 'opacity-0');
+
+            setTimeout(() => {
+                modal.classList.add('opacity-0', 'pointer-events-none');
+            }, 150);
         }
     </script>
 </body>
